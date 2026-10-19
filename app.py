@@ -23,6 +23,49 @@ st.warning(
 
 @st.cache_resource
 def get_face_cascade():
+    import os
+    import urllib.request
+    import tempfile
+
+    # Pehle OpenCV ke built-in model ko load karo
+    cascade_path = os.path.join(
+        cv2.data.haarcascades,
+        "haarcascade_frontalface_default.xml"
+    )
+
+    cascade = cv2.CascadeClassifier(cascade_path)
+
+    if not cascade.empty():
+        return cascade
+
+    # Built-in model na mile to official OpenCV repository se fetch karo
+    url = (
+        "https://raw.githubusercontent.com/opencv/opencv/"
+        "4.x/data/haarcascades/haarcascade_frontalface_default.xml"
+    )
+
+    try:
+        with urllib.request.urlopen(url, timeout=15) as response:
+            xml_data = response.read()
+
+        with tempfile.NamedTemporaryFile(
+            mode="wb", suffix=".xml", delete=False
+        ) as temp:
+            temp.write(xml_data)
+            temp_path = temp.name
+
+        cascade = cv2.CascadeClassifier(temp_path)
+
+        if cascade.empty():
+            raise RuntimeError("Downloaded face detector model is invalid.")
+
+        return cascade
+
+    except Exception as e:
+        raise RuntimeError(
+            f"Face detector load nahi hua: {e}. "
+            "OpenCV installation aur internet access check karo."
+        ) from e
     cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     cascade = cv2.CascadeClassifier(cascade_path)
     if cascade.empty():
